@@ -1,45 +1,28 @@
 import requests
+import os
 
-API_URL = "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english"
+API_URL = "https://api-inference.huggingface.co/models/mrm8488/bert-tiny-finetuned-fake-news-detection"
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+headers = {
+    "Authorization": f"Bearer {HF_TOKEN}"
+}
 
 def predict_text(text):
 
     payload = {"inputs": text[:256]}
 
-    response = requests.post(API_URL, json=payload)
+    try:
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
+        result = response.json()
 
-    result = response.json()[0]
+        # HuggingFace returns list of predictions
+        label = result[0]["label"]
+        score = result[0]["score"]
 
-    label = result["label"]
-    score = result["score"]
+        return label, score
 
-    if label == "NEGATIVE":
-        final_label = "Fake"
-    else:
-        final_label = "Real"
-
-    return final_label, score
-
-
-def explain_text(text):
-
-    suspicious_words = [
-        "breaking","shocking","secret","unbelievable",
-        "aliens","ufo","miracle","hoax","conspiracy"
-    ]
-
-    words = text.split()
-
-    highlighted = []
-    found = []
-
-    for w in words:
-        clean = w.lower().strip(".,!?")
-
-        if clean in suspicious_words:
-            highlighted.append(f"<span style='color:red;font-weight:bold'>{w}</span>")
-            found.append(w)
-        else:
-            highlighted.append(w)
-
-    return " ".join(highlighted), found
+    except Exception as e:
+        print("Text model error:", e)
+        return "Unknown", 0.0

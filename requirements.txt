@@ -2,8 +2,6 @@ flask
 gunicorn
 torch
 torchvision
-transformers
-scikit-learn
 numpy
 pillow
 opencv-python-headless

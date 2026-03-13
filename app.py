@@ -17,7 +17,10 @@ def index():
 
     if request.method == "POST":
         text = request.form["text"]
-        image = request.files["image"]
+        image = request.files.get("image")
+
+        if not image:
+            return render_template("index.html", error="Please upload an image")
 
         image_path = os.path.join(UPLOAD_FOLDER, image.filename)
         image.save(image_path)

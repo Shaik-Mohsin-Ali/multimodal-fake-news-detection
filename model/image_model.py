@@ -13,10 +13,15 @@ model.fc = nn.Linear(num_features, 2)
 
 # Load trained weights if available
 try:
-    model.load_state_dict(torch.load("model/image_cnn.pth", map_location=torch.device("cpu")))
-except:
-    pass
+    state_dict = torch.load("model/image_cnn.pth", map_location=torch.device("cpu"))
+    model.load_state_dict(state_dict)
+    model.to(torch.device("cpu"))
+except Exception as e:
+    print("Image model load error:", e)
 
+model.eval()
+
+model.to(torch.device("cpu"))
 model.eval()
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -56,7 +61,7 @@ def generate_gradcam(image_path):
         gradients.append(grad_out[0])
 
     handle_forward = target_layer.register_forward_hook(forward_hook)
-    handle_backward = target_layer.register_backward_hook(backward_hook)
+    handle_backward = target_layer.register_full_backward_hook(backward_hook)
 
     output = model(img_tensor)
     pred_class = output.argmax()

@@ -6,10 +6,10 @@ import cv2
 import numpy as np
 
 # Load pretrained ResNet50
-model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
 # Modify final layer for 2 classes
-num_features = model.fc.in_features
-model.fc = nn.Linear(num_features, 2)
+num_features = model.classifier[1].in_features
+model.classifier[1] = nn.Linear(num_features, 2)
 
 # Load trained weights if available
 try:

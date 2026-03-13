@@ -5,24 +5,8 @@ from PIL import Image
 import cv2
 import numpy as np
 
-# Load pretrained ResNet50
-model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
-# Modify final layer for 2 classes
-num_features = model.classifier[1].in_features
-model.classifier[1] = nn.Linear(num_features, 2)
+model = None
 
-# Load trained weights if available
-try:
-    state_dict = torch.load("model/image_cnn.pth", map_location=torch.device("cpu"))
-    model.load_state_dict(state_dict)
-    model.to(torch.device("cpu"))
-except Exception as e:
-    print("Image model load error:", e)
-
-model.eval()
-
-model.to(torch.device("cpu"))
-model.eval()
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -30,7 +14,29 @@ transform = transforms.Compose([
 
 classes = ["Fake", "Real"]
 
+def load_model():
+    global model
+
+    if model is None:
+        model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.DEFAULT)
+
+        num_features = model.classifier[1].in_features
+        model.classifier[1] = nn.Linear(num_features, 2)
+
+        state_dict = torch.load(
+            "model/image_cnn.pth",
+            map_location=torch.device("cpu")
+        )
+
+        model.load_state_dict(state_dict)
+        model.to(torch.device("cpu"))
+        model.eval()
+
+
 def predict_image(image_path):
+
+    load_model()
+
     image = Image.open(image_path).convert("RGB")
     img = transform(image).unsqueeze(0)
 
@@ -42,14 +48,17 @@ def predict_image(image_path):
     label = classes[pred.item()]
     return label, score.item()
 
+
 def generate_gradcam(image_path):
+
+    load_model()
 
     image = Image.open(image_path).convert("RGB")
     img_tensor = transform(image).unsqueeze(0)
     img_tensor.requires_grad = True
 
-    # Get final convolution layer
-    target_layer = model.layer4[-1]
+    # MobileNet last conv layer
+    target_layer = model.features[-1]
 
     activations = []
     gradients = []

@@ -1,25 +1,33 @@
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
 classifier = None
 
+tokenizer = None
+model = None
+
 def load_model():
-    global classifier
-    if classifier is None:
-        classifier = pipeline(
-            "text-classification",
-            model="model/bert_fake_news",
-            tokenizer="model/bert_fake_news",
-            device=-1   # force CPU
-        )
+    global tokenizer, model
+
+    if model is None:
+        tokenizer = AutoTokenizer.from_pretrained("model/bert_fake_news")
+        model = AutoModelForSequenceClassification.from_pretrained("model/bert_fake_news")
+        model.eval()
 
 def predict_text(text):
 
     load_model()
 
-    result = classifier(text[:256])[0]
+    inputs = tokenizer(text[:256], return_tensors="pt", truncation=True)
 
-    label = result["label"]
-    score = result["score"]
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    probs = torch.softmax(outputs.logits, dim=1)
+    score, pred = torch.max(probs, 1)
+
+    label = "LABEL_0" if pred.item() == 0 else "LABEL_1"
+    score = score.item()
 
     # Convert HuggingFace labels
     if label == "LABEL_0":

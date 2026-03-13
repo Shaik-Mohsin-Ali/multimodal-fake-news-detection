@@ -1,36 +1,19 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import torch
+import requests
 
-classifier = None
-
-tokenizer = None
-model = None
-
-def load_model():
-    global tokenizer, model
-
-    if model is None:
-        tokenizer = AutoTokenizer.from_pretrained("model/bert_fake_news")
-        model = AutoModelForSequenceClassification.from_pretrained("model/bert_fake_news")
-        model.eval()
+API_URL = "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english"
 
 def predict_text(text):
 
-    load_model()
+    payload = {"inputs": text[:256]}
 
-    inputs = tokenizer(text[:256], return_tensors="pt", truncation=True)
+    response = requests.post(API_URL, json=payload)
 
-    with torch.no_grad():
-        outputs = model(**inputs)
+    result = response.json()[0]
 
-    probs = torch.softmax(outputs.logits, dim=1)
-    score, pred = torch.max(probs, 1)
+    label = result["label"]
+    score = result["score"]
 
-    label = "LABEL_0" if pred.item() == 0 else "LABEL_1"
-    score = score.item()
-
-    # Convert HuggingFace labels
-    if label == "LABEL_0":
+    if label == "NEGATIVE":
         final_label = "Fake"
     else:
         final_label = "Real"
@@ -41,23 +24,22 @@ def predict_text(text):
 def explain_text(text):
 
     suspicious_words = [
-        "breaking", "shocking", "secret", "unbelievable",
-        "aliens", "ufo", "miracle", "hoax", "conspiracy"
+        "breaking","shocking","secret","unbelievable",
+        "aliens","ufo","miracle","hoax","conspiracy"
     ]
 
     words = text.split()
-    highlighted_text = []
-    found_words = []
 
-    for word in words:
-        clean_word = word.lower().strip(".,!?")
+    highlighted = []
+    found = []
 
-        if clean_word in suspicious_words:
-            highlighted_text.append(f"<span style='color:red;font-weight:bold'>{word}</span>")
-            found_words.append(word)
+    for w in words:
+        clean = w.lower().strip(".,!?")
+
+        if clean in suspicious_words:
+            highlighted.append(f"<span style='color:red;font-weight:bold'>{w}</span>")
+            found.append(w)
         else:
-            highlighted_text.append(word)
+            highlighted.append(w)
 
-    highlighted_sentence = " ".join(highlighted_text)
-
-    return highlighted_sentence, found_words
+    return " ".join(highlighted), found

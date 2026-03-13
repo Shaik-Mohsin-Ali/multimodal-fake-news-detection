@@ -58,7 +58,7 @@ def generate_gradcam(image_path):
     img_tensor.requires_grad = True
 
     # MobileNet last conv layer
-    target_layer = model.features[-1]
+    target_layer = model.features[18]
 
     activations = []
     gradients = []

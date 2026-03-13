@@ -1,13 +1,20 @@
 from transformers import pipeline
 
-# Load our trained BERT fake news model
-classifier = pipeline(
-    "text-classification",
-    model="model/bert_fake_news",
-    tokenizer="model/bert_fake_news"
-)
+classifier = None
+
+def load_model():
+    global classifier
+    if classifier is None:
+        classifier = pipeline(
+            "text-classification",
+            model="model/bert_fake_news",
+            tokenizer="model/bert_fake_news",
+            device=-1   # force CPU
+        )
 
 def predict_text(text):
+
+    load_model()
 
     result = classifier(text[:256])[0]
 

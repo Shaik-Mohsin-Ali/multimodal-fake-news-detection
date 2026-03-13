@@ -13,16 +13,19 @@ def predict_text(text):
 
     payload = {"inputs": text[:256]}
 
-    try:
-        response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
-        result = response.json()
+    response = requests.post(API_URL, headers=headers, json=payload, timeout=10)
 
-        # HuggingFace returns list of predictions
-        label = result[0]["label"]
-        score = result[0]["score"]
+    data = response.json()
 
-        return label, score
-
-    except Exception as e:
-        print("Text model error:", e)
+    # Handle API error
+    if isinstance(data, dict) and "error" in data:
+        print("HuggingFace API error:", data["error"])
         return "Unknown", 0.0
+
+    # Normal prediction
+    result = data[0]
+
+    label = result["label"]
+    score = result["score"]
+
+    return label, score

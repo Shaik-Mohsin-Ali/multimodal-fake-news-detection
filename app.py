@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request
 import os
 
-from model.text_model import predict_text, explain_text
+from model.text_model import predict_text
 from model.image_model import predict_image, generate_gradcam
 from model.fusion import fuse_predictions
 
@@ -28,7 +28,10 @@ def index():
         text_label, text_score = predict_text(text)
         image_label, image_score = predict_image(image_path)
         heatmap_path = generate_gradcam(image_path)
-        highlighted_text, keywords = explain_text(text)
+
+        # temporary replacement for explain_text
+        highlighted_text = text
+        keywords = []
 
         final_label, final_score = fuse_predictions(
             text_label, text_score,
